@@ -32,33 +32,45 @@ export default function Home() {
     }));
   };
 
-  const generatePDF = () => {
-    // BOMを追加してUTF-8として認識されるようにする
+const generatePDF = () => {
+    // BOMを追加
     const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
     
+    // テキストコンテンツを作成
     const content = categories.map(category => {
-      const items_text = items[category.id]
-        .filter(item => item)
+      const categoryItems = items[category.id]
+        .filter(item => item.trim()) // 空の項目を除外
         .map((item, index) => `${index + 1}. ${item}`)
         .join('\n');
 
-      return `【${category.name}】\n${items_text}`;
-    }).join('\n\n');
+      // カテゴリが空の場合は「なし」と表示
+      return `■${category.name}■\n${categoryItems || 'なし'}\n`;
+    }).join('\n');
 
-    // BOMとコンテンツを結合
-    const blob = new Blob([bom, content], { 
-      type: 'text/plain;charset=utf-8' 
-    });
+    try {
+      // BOMとコンテンツを結合してBlobを作成
+      const blob = new Blob([bom, content], {
+        type: 'text/plain;charset=UTF-8'
+      });
 
-    // ファイル名を設定してダウンロード
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'やりたいことリスト.txt';  // ファイル名を指定
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      // ダウンロードリンクを作成
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+      a.href = url;
+      a.download = `やりたいことリスト_${timestamp}.txt`;
+      document.body.appendChild(a);
+      
+      // ダウンロードを実行
+      a.click();
+      
+      // クリーンアップ
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('ファイルの出力に失敗しました:', error);
+      alert('ファイルの出力に失敗しました。もう一度お試しください。');
+    }
   };
 
   return (
