@@ -32,13 +32,6 @@ export default function Home() {
     }));
   };
 
-'use client';
-
-// ... 他のインポートと定数は同じ ...
-
-export default function Home() {
-  // ... 他のステート管理は同じ ...
-
   const generatePDF = () => {
     // BOMを追加してUTF-8として認識されるようにする
     const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
@@ -68,8 +61,6 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
-  // ... 残りのコンポーネントの内容は同じ ...
-}
   return (
     <main className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
