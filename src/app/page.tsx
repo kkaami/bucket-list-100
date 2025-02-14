@@ -32,19 +32,44 @@ export default function Home() {
     }));
   };
 
+'use client';
+
+// ... 他のインポートと定数は同じ ...
+
+export default function Home() {
+  // ... 他のステート管理は同じ ...
+
   const generatePDF = () => {
+    // BOMを追加してUTF-8として認識されるようにする
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    
     const content = categories.map(category => {
-      return `
-=== ${category.name} ===
-${items[category.id].filter(item => item).map((item, index) => `${index + 1}. ${item}`).join('\n')}
-      `;
+      const items_text = items[category.id]
+        .filter(item => item)
+        .map((item, index) => `${index + 1}. ${item}`)
+        .join('\n');
+
+      return `【${category.name}】\n${items_text}`;
     }).join('\n\n');
 
-    const blob = new Blob([content], { type: 'text/plain' });
+    // BOMとコンテンツを結合
+    const blob = new Blob([bom, content], { 
+      type: 'text/plain;charset=utf-8' 
+    });
+
+    // ファイル名を設定してダウンロード
     const url = URL.createObjectURL(blob);
-    window.open(url);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'やりたいことリスト.txt';  // ファイル名を指定
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
+  // ... 残りのコンポーネントの内容は同じ ...
+}
   return (
     <main className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
