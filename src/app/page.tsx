@@ -32,80 +32,62 @@ export default function Home() {
     }));
   };
 
- const generatePDF = async () => {
+ const generatePDF = () => {
     try {
       // PDFドキュメントを作成
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4',
-        putOnlyUsedFonts: true
+        format: 'a4'
       });
-
-      // テキストをエンコード
-      const textToBase64 = (text: string) => {
-        return Buffer.from(text).toString('base64');
-      };
 
       // マージン設定
       const margin = 20;
       let y = margin;
 
-      // タイトル
-      doc.setFontSize(16);
-      const title = textToBase64('やりたいことリスト100個');
-      doc.text(title, doc.internal.pageSize.width / 2, y, { 
-        align: 'center',
-        renderingMode: 'fill'
-      });
-      y += 15;
+      // データをUTF-8テキストとして出力
+      const content = ['やりたいことリスト100個\n\n'];
 
-      // 各カテゴリの内容
-      doc.setFontSize(12);
-      for (const category of categories) {
-        if (y > doc.internal.pageSize.height - margin) {
-          doc.addPage();
-          y = margin;
-        }
-
-        // カテゴリ名
-        const categoryTitle = textToBase64(`【${category.name}】`);
-        doc.text(categoryTitle, margin, y, {
-          renderingMode: 'fill'
-        });
-        y += 8;
-
-        // アイテムリスト
-        const categoryItems = items[category.id].filter(item => item.trim());
+      // 各カテゴリの内容を追加
+      categories.forEach(category => {
+        content.push(`■${category.name}■\n`);
+        
+        const categoryItems = items[category.id]
+          .filter(item => item.trim())
+          .map((item, index) => `${index + 1}. ${item}`);
+        
         if (categoryItems.length === 0) {
-          const noneText = textToBase64('なし');
-          doc.text(noneText, margin + 5, y, {
-            renderingMode: 'fill'
-          });
-          y += 8;
+          content.push('なし\n');
         } else {
-          for (const [index, item] of categoryItems.entries()) {
-            if (y > doc.internal.pageSize.height - margin) {
-              doc.addPage();
-              y = margin;
-            }
-            const itemText = textToBase64(`${index + 1}. ${item}`);
-            doc.text(itemText, margin + 5, y, {
-              renderingMode: 'fill'
-            });
-            y += 8;
-          }
+          content.push(categoryItems.join('\n') + '\n');
         }
-        y += 5;
-      }
+        
+        content.push('\n');
+      });
 
-      // 保存
+      // BOMを追加してUTF-8として認識されるようにする
+      const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+      const textContent = content.join('');
+      
+      // テキストファイルとして出力
+      const blob = new Blob([bom, textContent], { 
+        type: 'text/plain;charset=utf-8' 
+      });
+
+      // ダウンロード
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-      doc.save(`やりたいことリスト_${timestamp}.pdf`);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `やりたいことリスト_${timestamp}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
     } catch (error) {
-      console.error('PDFの出力に失敗しました:', error);
-      alert('PDFの出力に失敗しました。もう一度お試しください。');
+      console.error('出力に失敗しました:', error);
+      alert('出力に失敗しました。もう一度お試しください。');
     }
   };
 
@@ -145,13 +127,13 @@ export default function Home() {
         </div>
 
         <div className="mt-8 text-center">
-          <button 
-            onClick={generatePDF}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 
-                     rounded-md transition-colors duration-200 font-medium"
-          >
-            PDFで出力
-          </button>
+<button 
+  onClick={generatePDF}
+  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 
+             rounded-md transition-colors duration-200 font-medium"
+>
+  テキストファイルで出力
+</button>
         </div>
 
         <p className="mt-4 text-center text-gray-500">
