@@ -38,58 +38,70 @@ export default function Home() {
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: 'a4',
+        putOnlyUsedFonts: true
       });
 
-      // フォントサイズと行間を設定
+      // テキストをエンコード
+      const textToBase64 = (text: string) => {
+        return Buffer.from(text).toString('base64');
+      };
+
+      // マージン設定
       const margin = 20;
       let y = margin;
 
-      // タイトルを追加（日本語なしで）
-      doc.setFontSize(18);
-      doc.text('List of 100 Things', doc.internal.pageSize.width / 2, y, { align: 'center' });
+      // タイトル
+      doc.setFontSize(16);
+      const title = textToBase64('やりたいことリスト100個');
+      doc.text(title, doc.internal.pageSize.width / 2, y, { 
+        align: 'center',
+        renderingMode: 'fill'
+      });
       y += 15;
 
-      // カテゴリごとの内容を追加
+      // 各カテゴリの内容
       doc.setFontSize(12);
-      categories.forEach(category => {
-        // ページをまたぐ場合は新しいページを追加
+      for (const category of categories) {
         if (y > doc.internal.pageSize.height - margin) {
           doc.addPage();
           y = margin;
         }
 
-        // カテゴリ名を追加
-        doc.text(`[${category.name}]`, margin, y);
+        // カテゴリ名
+        const categoryTitle = textToBase64(`【${category.name}】`);
+        doc.text(categoryTitle, margin, y, {
+          renderingMode: 'fill'
+        });
         y += 8;
 
-        // アイテムを追加
+        // アイテムリスト
         const categoryItems = items[category.id].filter(item => item.trim());
-        
         if (categoryItems.length === 0) {
-          if (y > doc.internal.pageSize.height - margin) {
-            doc.addPage();
-            y = margin;
-          }
-          doc.text('None', margin + 5, y);
+          const noneText = textToBase64('なし');
+          doc.text(noneText, margin + 5, y, {
+            renderingMode: 'fill'
+          });
           y += 8;
         } else {
-          categoryItems.forEach((item, index) => {
+          for (const [index, item] of categoryItems.entries()) {
             if (y > doc.internal.pageSize.height - margin) {
               doc.addPage();
               y = margin;
             }
-            doc.text(`${index + 1}. ${item}`, margin + 5, y);
+            const itemText = textToBase64(`${index + 1}. ${item}`);
+            doc.text(itemText, margin + 5, y, {
+              renderingMode: 'fill'
+            });
             y += 8;
-          });
+          }
         }
+        y += 5;
+      }
 
-        y += 5; // カテゴリ間の余白
-      });
-
-      // PDFを保存
+      // 保存
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-      doc.save(`bucket-list_${timestamp}.pdf`);
+      doc.save(`やりたいことリスト_${timestamp}.pdf`);
 
     } catch (error) {
       console.error('PDFの出力に失敗しました:', error);
