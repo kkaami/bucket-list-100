@@ -34,17 +34,6 @@ export default function Home() {
 
  const generatePDF = () => {
     try {
-      // PDFドキュメントを作成
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-
-      // マージン設定
-      const margin = 20;
-      let y = margin;
-
       // データをUTF-8テキストとして出力
       const content = ['やりたいことリスト100個\n\n'];
 
