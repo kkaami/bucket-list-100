@@ -1,6 +1,6 @@
 'use client';
-
 import React, { useState } from 'react';
+import jsPDF from 'jspdf';
 
 interface Category {
   id: string;
@@ -32,44 +32,77 @@ export default function Home() {
     }));
   };
 
-const generatePDF = () => {
-    // BOMを追加
-    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-    
-    // テキストコンテンツを作成
-    const content = categories.map(category => {
-      const categoryItems = items[category.id]
-        .filter(item => item.trim()) // 空の項目を除外
-        .map((item, index) => `${index + 1}. ${item}`)
-        .join('\n');
-
-      // カテゴリが空の場合は「なし」と表示
-      return `■${category.name}■\n${categoryItems || 'なし'}\n`;
-    }).join('\n');
-
+ const generatePDF = async () => {
     try {
-      // BOMとコンテンツを結合してBlobを作成
-      const blob = new Blob([bom, content], {
-        type: 'text/plain;charset=UTF-8'
+      // PDFドキュメントを作成
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
       });
 
-      // ダウンロードリンクを作成
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      // 日本語フォントの設定
+      const fontUrl = 'https://raw.githubusercontent.com/googlefonts/noto-cjk/main/Sans/OTF/Japanese/NotoSansJP-Regular.otf';
+      const fontData = await fetch(fontUrl).then(response => response.arrayBuffer());
+      doc.addFileToVFS('NotoSansJP-Regular.ttf', fontData);
+      doc.addFont('NotoSansJP-Regular.ttf', 'NotoSansJP', 'normal');
+      doc.setFont('NotoSansJP');
+
+      // 余白の設定
+      const margin = 20;
+      let y = margin;
+
+      // タイトルを追加
+      doc.setFontSize(18);
+      doc.text('やりたいことリスト100個', doc.internal.pageSize.width / 2, y, { align: 'center' });
+      y += 15;
+
+      // カテゴリごとの内容を追加
+      doc.setFontSize(12);
+      categories.forEach(category => {
+        // ページをまたぐ場合は新しいページを追加
+        if (y > doc.internal.pageSize.height - margin) {
+          doc.addPage();
+          y = margin;
+        }
+
+        // カテゴリ名を追加
+        doc.setFont('NotoSansJP', 'bold');
+        doc.text(`【${category.name}】`, margin, y);
+        y += 8;
+
+        // アイテムを追加
+        doc.setFont('NotoSansJP', 'normal');
+        const categoryItems = items[category.id].filter(item => item.trim());
+        
+        if (categoryItems.length === 0) {
+          if (y > doc.internal.pageSize.height - margin) {
+            doc.addPage();
+            y = margin;
+          }
+          doc.text('なし', margin + 5, y);
+          y += 8;
+        } else {
+          categoryItems.forEach((item, index) => {
+            if (y > doc.internal.pageSize.height - margin) {
+              doc.addPage();
+              y = margin;
+            }
+            doc.text(`${index + 1}. ${item}`, margin + 5, y);
+            y += 8;
+          });
+        }
+
+        y += 5; // カテゴリ間の余白
+      });
+
+      // PDFを保存
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-      a.href = url;
-      a.download = `やりたいことリスト_${timestamp}.txt`;
-      document.body.appendChild(a);
-      
-      // ダウンロードを実行
-      a.click();
-      
-      // クリーンアップ
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      doc.save(`やりたいことリスト_${timestamp}.pdf`);
+
     } catch (error) {
-      console.error('ファイルの出力に失敗しました:', error);
-      alert('ファイルの出力に失敗しました。もう一度お試しください。');
+      console.error('PDFの出力に失敗しました:', error);
+      alert('PDFの出力に失敗しました。もう一度お試しください。');
     }
   };
 
