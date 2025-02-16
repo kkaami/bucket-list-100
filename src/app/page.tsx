@@ -41,20 +41,13 @@ export default function Home() {
         format: 'a4'
       });
 
-      // 日本語フォントの設定
-      const fontUrl = 'https://raw.githubusercontent.com/googlefonts/noto-cjk/main/Sans/OTF/Japanese/NotoSansJP-Regular.otf';
-      const fontData = await fetch(fontUrl).then(response => response.arrayBuffer());
-      doc.addFileToVFS('NotoSansJP-Regular.ttf', fontData);
-      doc.addFont('NotoSansJP-Regular.ttf', 'NotoSansJP', 'normal');
-      doc.setFont('NotoSansJP');
-
-      // 余白の設定
+      // フォントサイズと行間を設定
       const margin = 20;
       let y = margin;
 
-      // タイトルを追加
+      // タイトルを追加（日本語なしで）
       doc.setFontSize(18);
-      doc.text('やりたいことリスト100個', doc.internal.pageSize.width / 2, y, { align: 'center' });
+      doc.text('List of 100 Things', doc.internal.pageSize.width / 2, y, { align: 'center' });
       y += 15;
 
       // カテゴリごとの内容を追加
@@ -67,12 +60,10 @@ export default function Home() {
         }
 
         // カテゴリ名を追加
-        doc.setFont('NotoSansJP', 'bold');
-        doc.text(`【${category.name}】`, margin, y);
+        doc.text(`[${category.name}]`, margin, y);
         y += 8;
 
         // アイテムを追加
-        doc.setFont('NotoSansJP', 'normal');
         const categoryItems = items[category.id].filter(item => item.trim());
         
         if (categoryItems.length === 0) {
@@ -80,7 +71,7 @@ export default function Home() {
             doc.addPage();
             y = margin;
           }
-          doc.text('なし', margin + 5, y);
+          doc.text('None', margin + 5, y);
           y += 8;
         } else {
           categoryItems.forEach((item, index) => {
@@ -98,7 +89,7 @@ export default function Home() {
 
       // PDFを保存
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-      doc.save(`やりたいことリスト_${timestamp}.pdf`);
+      doc.save(`bucket-list_${timestamp}.pdf`);
 
     } catch (error) {
       console.error('PDFの出力に失敗しました:', error);
